@@ -16,7 +16,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: '3.8'
 
       - name: Install dependencies
         run: |
@@ -35,17 +35,17 @@ jobs:
           python -c "
 import snowflake.connector
 ctx = snowflake.connector.connect(
-    user='$SNOWFLAKE_USER',
-    password='$SNOWFLAKE_PASSWORD',
-    account='$SNOWFLAKE_ACCOUNT',
-    warehouse='$SNOWFLAKE_WAREHOUSE',
-    database='$SNOWFLAKE_DATABASE',
-    schema='$SNOWFLAKE_SCHEMA'
+    user='${{ secrets.SNOWFLAKE_USER }}',
+    password='${{ secrets.SNOWFLAKE_PASSWORD }}',
+    account='${{ secrets.SNOWFLAKE_ACCOUNT }}',
+    warehouse='${{ secrets.SNOWFLAKE_WAREHOUSE }}',
+    database='${{ secrets.SNOWFLAKE_DATABASE }}',
+    schema='${{ secrets.SNOWFLAKE_SCHEMA }}'
 )
 cs = ctx.cursor()
-cs.execute('USE DATABASE $SNOWFLAKE_DATABASE')
-cs.execute('USE SCHEMA $SNOWFLAKE_SCHEMA')
-cs.execute('''
+cs.execute('USE DATABASE ${{ secrets.SNOWFLAKE_DATABASE }}')
+cs.execute('USE SCHEMA ${{ secrets.SNOWFLAKE_SCHEMA }}')
+cs.execute(\'''
 INSERT INTO Sales_data (Product_id, Sale_date, Sale_price, Sale_quantity)
 SELECT Product_id, Sale_date, Sale_price, Sale_quantity
 FROM Source_table
@@ -54,7 +54,7 @@ WHERE NOT EXISTS (
     WHERE Sales_data.Product_id = Source_table.Product_id
     AND Sales_data.Sale_date = Source_table.Sale_date
 )
-''')
+\''')
 cs.close()
 ctx.close()
 "
