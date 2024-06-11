@@ -1,0 +1,60 @@
+name: Snowflake CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-sales-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install snowflake-connector-python
+
+      - name: Run Snowflake Script
+        env:
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
+        run: |
+          python -c "
+import snowflake.connector
+ctx = snowflake.connector.connect(
+    user='$SNOWFLAKE_USER',
+    password='$SNOWFLAKE_PASSWORD',
+    account='$SNOWFLAKE_ACCOUNT',
+    warehouse='$SNOWFLAKE_WAREHOUSE',
+    database='$SNOWFLAKE_DATABASE',
+    schema='$SNOWFLAKE_SCHEMA'
+)
+cs = ctx.cursor()
+cs.execute('USE DATABASE $SNOWFLAKE_DATABASE')
+cs.execute('USE SCHEMA $SNOWFLAKE_SCHEMA')
+cs.execute('''
+INSERT INTO Sales_data (Product_id, Sale_date, Sale_price, Sale_quantity)
+SELECT Product_id, Sale_date, Sale_price, Sale_quantity
+FROM Source_table
+WHERE NOT EXISTS (
+    SELECT 1 FROM Sales_data
+    WHERE Sales_data.Product_id = Source_table.Product_id
+    AND Sales_data.Sale_date = Source_table.Sale_date
+)
+''')
+cs.close()
+ctx.close()
+"
