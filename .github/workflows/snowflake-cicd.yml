@@ -45,7 +45,7 @@ ctx = snowflake.connector.connect(
 cs = ctx.cursor()
 cs.execute('USE DATABASE ${{ secrets.SNOWFLAKE_DATABASE }}')
 cs.execute('USE SCHEMA ${{ secrets.SNOWFLAKE_SCHEMA }}')
-cs.execute(\'''
+cs.execute(\"\"\"
 INSERT INTO Sales_data (Product_id, Sale_date, Sale_price, Sale_quantity)
 SELECT Product_id, Sale_date, Sale_price, Sale_quantity
 FROM Source_table
@@ -54,7 +54,7 @@ WHERE NOT EXISTS (
     WHERE Sales_data.Product_id = Source_table.Product_id
     AND Sales_data.Sale_date = Source_table.Sale_date
 )
-\''')
+\"\"\")
 cs.close()
 ctx.close()
 "
